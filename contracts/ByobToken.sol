@@ -27,7 +27,7 @@ contract ByobToken {
     }
 
     function transfer(address _to, uint256 _value) public returns (bool success) {
-        require(balances[msg.sender] >= _value, "Not enough tokens");
+        require(balances[msg.sender] >= _value, "Not enough tokens.");
 
         balances[msg.sender] -= _value;
         balances[_to] += _value;
@@ -37,11 +37,11 @@ contract ByobToken {
     }
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
-        require(_value <= balances[_from]);
-        require(_value <= allowed[_from][msg.sender]);
+        require(_value <= balances[_from], "Not enough tokens.");
+        require(_value <= allowed[_from][_to], "Not enough allowance.");
 
         balances[_from] -= _value;
-        allowed[_from][msg.sender] -= _value;
+        allowed[_from][_to] -= _value;
         balances[_to] += _value;
         emit Transfer(_from, _to, _value);
 
@@ -49,7 +49,7 @@ contract ByobToken {
     }
     
     function approve(address _spender, uint256 _value) public returns (bool success) {
-        allowed[msg.sender][_spender] += _value;
+        allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
 
         return true;
