@@ -50,6 +50,7 @@ contract UniStake is AccessControl {
     uint256 public incentive;
     uint256 public yieldPeriod;
     uint256 public lockPeriod;
+    uint256 public totalStaked;
 
     constructor(address _stakingToken, address _rewardsToken) {
         stakingToken = IERC20(_stakingToken);
@@ -58,6 +59,7 @@ contract UniStake is AccessControl {
         incentive = 20;
         yieldPeriod = 600;
         lockPeriod = 1200;
+        totalStaked = 0;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
@@ -70,16 +72,21 @@ contract UniStake is AccessControl {
         stakingToken.transferFrom(msg.sender, address(this), _amount);
         s_stake = Stake(_amount, 0, block.timestamp, false);
         stakes[msg.sender] = s_stake;
+        totalStaked += _amount;
     }
 
     function unstake() public calculateReward {
-        require(stakes[msg.sender].rewardAmount == 0, "Claim your rewards first");
+        require(
+            stakes[msg.sender].rewardAmount == 0,
+            "Claim your rewards first"
+        );
         require(stakes[msg.sender].stakedAmount > 0, "No tokens to unstake");
         require(
             block.timestamp > stakes[msg.sender].startTime + lockPeriod,
             "Staking is not unlocked yet"
         );
         stakingToken.transfer(msg.sender, stakes[msg.sender].stakedAmount);
+        totalStaked -= stakes[msg.sender].stakedAmount;
         stakes[msg.sender].stakedAmount = 0;
     }
 
@@ -93,12 +100,7 @@ contract UniStake is AccessControl {
         stakes[msg.sender].rewardClaimed = true;
     }
 
-    function getAddressReward(address _addr)
-        public
-        view
-        calculateReward
-        returns (uint256)
-    {
+    function getAddressReward(address _addr) public view returns (uint256) {
         return stakes[_addr].rewardAmount;
     }
 
