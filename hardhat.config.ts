@@ -1,11 +1,13 @@
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
+import "@openzeppelin/hardhat-upgrades";
 import "solidity-coverage";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import 'dotenv/config';
 import './tasks/byob.ts';
+import './tasks/staking.ts';
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
