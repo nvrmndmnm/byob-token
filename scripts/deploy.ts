@@ -14,7 +14,7 @@ async function main() {
     console.log("Contract address:", byobToken.address);
 
     //Deploy staking contract
-    const STAKING_TOKEN_CONTRACT = byobToken.address;
+    const STAKING_TOKEN_CONTRACT = `${process.env.UNISTAKE_CONTRACT_ADDRESS}`;
     const REWARD_TOKEN_CONTRACT = byobToken.address;
 
     console.log("Deploying contracts with the account:", deployer.address);

@@ -23,7 +23,7 @@ describe("UniStake contract", () => {
 
         byobTokenStake = await ByobToken.deploy();
         byobTokenReward = await ByobToken.deploy();
-        uniStake = await UniStake.deploy(byobTokenStake.address, byobTokenReward.address);
+        uniStake = await UniStake.deploy(byobTokenStake.address, byobTokenReward.address, 20, 600, 1200);
 
         await byobTokenStake.transfer(addr1.address, 1000);
         await byobTokenStake.connect(addr1).approve(uniStake.address, 1000);
@@ -110,7 +110,7 @@ describe("UniStake contract", () => {
         });
         it("Should revert non-admin setting lock period", async () => {
             await expect(uniStake.connect(addr1).setLockPeriod(10))
-                .to.be.revertedWith('Admin only function');
+                .to.be.revertedWith('Ownable: caller is not the owner');
         });
         it("Should revert setting negative lock period", async () => {
             await expect(uniStake.setLockPeriod(0))
@@ -123,7 +123,7 @@ describe("UniStake contract", () => {
         });
         it("Should revert non-admin setting yield period", async () => {
             await expect(uniStake.connect(addr1).setYieldPeriod(10))
-                .to.be.revertedWith('Admin only function');
+                .to.be.revertedWith('Ownable: caller is not the owner');
         });
         it("Should revert setting negative yield period", async () => {
             await expect(uniStake.setYieldPeriod(0))
@@ -136,7 +136,7 @@ describe("UniStake contract", () => {
         });
         it("Should revert non-admin setting incentive", async () => {
             await expect(uniStake.connect(addr1).setIncentiveValue(10))
-                .to.be.revertedWith('Admin only function');
+                .to.be.revertedWith('Ownable: caller is not the owner');
         });
         it("Should revert setting negative incentive", async () => {
             await expect(uniStake.setIncentiveValue(0))

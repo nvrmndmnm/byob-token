@@ -2,46 +2,17 @@
 pragma solidity ^0.8.0;
 
 import "./ByobToken.sol";
+import "./IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-interface IERC20 {
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
-
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
-}
-
-contract UniStake is AccessControl {
+contract UniStake is Ownable {
     struct Stake {
         uint256 stakedAmount;
         uint256 rewardAmount;
         uint256 startTime;
         bool rewardClaimed;
     }
-    Stake s_stake;
     mapping(address => Stake) internal stakes;
 
     IERC20 public stakingToken;
@@ -52,16 +23,20 @@ contract UniStake is AccessControl {
     uint256 public lockPeriod;
     uint256 public totalStaked;
 
-    constructor(address _stakingToken, address _rewardsToken) {
+    constructor(
+        address _stakingToken,
+        address _rewardsToken,
+        uint256 initialIncentive,
+        uint256 initialYieldPeriod,
+        uint256 initialLockPeriod
+    ) {
         stakingToken = IERC20(_stakingToken);
         rewardsToken = ByobToken(_rewardsToken);
 
-        incentive = 20;
-        yieldPeriod = 600;
-        lockPeriod = 1200;
+        incentive = initialIncentive;
+        yieldPeriod = initialYieldPeriod;
+        lockPeriod = initialLockPeriod;
         totalStaked = 0;
-
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function stake(uint256 _amount) public {
@@ -70,12 +45,12 @@ contract UniStake is AccessControl {
             "Cannot stake more than once"
         );
         stakingToken.transferFrom(msg.sender, address(this), _amount);
-        s_stake = Stake(_amount, 0, block.timestamp, false);
-        stakes[msg.sender] = s_stake;
+        stakes[msg.sender] = Stake(_amount, 0, block.timestamp, false);
         totalStaked += _amount;
     }
 
-    function unstake() public calculateReward {
+    function unstake() public {
+        calculateReward();
         require(
             stakes[msg.sender].rewardAmount == 0,
             "Claim your rewards first"
@@ -90,7 +65,8 @@ contract UniStake is AccessControl {
         stakes[msg.sender].stakedAmount = 0;
     }
 
-    function claim() public calculateReward {
+    function claim() public {
+        calculateReward();
         require(
             stakes[msg.sender].rewardAmount > 0,
             "No available rewards yet"
@@ -108,25 +84,22 @@ contract UniStake is AccessControl {
         return stakes[_addr].stakedAmount;
     }
 
-    function setLockPeriod(uint256 _seconds) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Admin only function");
+    function setLockPeriod(uint256 _seconds) public onlyOwner {
         require(_seconds > 0, "Unlock time cannot be negative");
         lockPeriod = _seconds;
     }
 
-    function setYieldPeriod(uint256 _seconds) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Admin only function");
+    function setYieldPeriod(uint256 _seconds) public onlyOwner {
         require(_seconds > 0, "Yield period cannot be negative");
         yieldPeriod = _seconds;
     }
 
-    function setIncentiveValue(uint256 _value) public {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Admin only function");
+    function setIncentiveValue(uint256 _value) public onlyOwner {
         require(_value > 0, "Incentive cannot be negative");
         incentive = _value;
     }
 
-    modifier calculateReward() {
+    function calculateReward() internal {
         if (
             block.timestamp > stakes[msg.sender].startTime + yieldPeriod &&
             stakes[msg.sender].rewardClaimed == false
@@ -135,6 +108,5 @@ contract UniStake is AccessControl {
                 (stakes[msg.sender].stakedAmount * incentive) /
                 100;
         }
-        _;
     }
 }
