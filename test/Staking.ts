@@ -56,12 +56,23 @@ describe("UniStake contract", () => {
             expect(await uniStake.totalStaked()).to.equal(150);
         });
 
-        it("Should revert if tried to stake twice", async () => {
+        it("Should let to stake twice", async () => {
             await uniStake.connect(addr1).stake(50);
-            await expect(uniStake.connect(addr1).stake(50))
-                .to.be.revertedWith('Cannot stake more than once');
-            expect(await uniStake.getAddressStake(addr1.address)).to.equal(50);
-            expect(await uniStake.totalStaked()).to.equal(50);
+            await uniStake.connect(addr1).stake(50);
+            expect(await uniStake.getAddressStake(addr1.address)).to.equal(100);
+            expect(await uniStake.totalStaked()).to.equal(100);
+        });
+
+        it("Should claim available rewards before second stake", async () => {
+            await uniStake.connect(addr1).stake(100);
+            await uniStake.setYieldPeriod(1);
+            await new Promise(f => setTimeout(f, 1000));
+            expect(await byobTokenReward.balanceOf(addr1.address)).to.equal(0);
+            await uniStake.connect(addr1).stake(50);
+            expect(await byobTokenReward.balanceOf(addr1.address)).to.equal(20);
+            expect(await uniStake.getAddressStake(addr1.address)).to.equal(150);
+            expect(await uniStake.getAddressReward(addr1.address)).to.equal(0);
+            expect(await uniStake.totalStaked()).to.equal(150);
         });
 
         it("Should unstake all tokens", async () => {

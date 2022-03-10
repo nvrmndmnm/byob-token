@@ -40,12 +40,17 @@ contract UniStake is Ownable {
     }
 
     function stake(uint256 _amount) public {
-        require(
-            stakes[msg.sender].stakedAmount == 0,
-            "Cannot stake more than once"
-        );
+        calculateReward();
+        if (stakes[msg.sender].rewardAmount > 0) {
+            claim();
+        }
         stakingToken.transferFrom(msg.sender, address(this), _amount);
-        stakes[msg.sender] = Stake(_amount, 0, block.timestamp, false);
+        stakes[msg.sender] = Stake(
+            stakes[msg.sender].stakedAmount + _amount,
+            0,
+            block.timestamp,
+            false
+        );
         totalStaked += _amount;
     }
 
