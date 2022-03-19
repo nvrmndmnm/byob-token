@@ -9,11 +9,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract UniStake is Ownable {
     struct Stake {
         uint256 stakedAmount;
-        uint256 rewardAmount;
         uint256 startTime;
         bool rewardClaimed;
     }
     mapping(address => Stake) internal stakes;
+    mapping(address => uint256) internal rewards;
 
     IERC20 public stakingToken;
     ByobToken public rewardsToken;
@@ -41,13 +41,12 @@ contract UniStake is Ownable {
 
     function stake(uint256 _amount) public {
         calculateReward();
-        if (stakes[msg.sender].rewardAmount > 0) {
+        if (rewards[msg.sender] > 0) {
             claim();
         }
         stakingToken.transferFrom(msg.sender, address(this), _amount);
         stakes[msg.sender] = Stake(
             stakes[msg.sender].stakedAmount + _amount,
-            0,
             block.timestamp,
             false
         );
@@ -56,10 +55,7 @@ contract UniStake is Ownable {
 
     function unstake() public {
         calculateReward();
-        require(
-            stakes[msg.sender].rewardAmount == 0,
-            "Claim your rewards first"
-        );
+        require(rewards[msg.sender] == 0, "Claim your rewards first");
         require(stakes[msg.sender].stakedAmount > 0, "No tokens to unstake");
         require(
             block.timestamp > stakes[msg.sender].startTime + lockPeriod,
@@ -72,17 +68,14 @@ contract UniStake is Ownable {
 
     function claim() public {
         calculateReward();
-        require(
-            stakes[msg.sender].rewardAmount > 0,
-            "No available rewards yet"
-        );
-        rewardsToken.transfer(msg.sender, stakes[msg.sender].rewardAmount);
-        stakes[msg.sender].rewardAmount = 0;
+        require(rewards[msg.sender] > 0, "No available rewards yet");
+        rewardsToken.transfer(msg.sender, rewards[msg.sender]);
+        rewards[msg.sender] = 0;
         stakes[msg.sender].rewardClaimed = true;
     }
 
     function getAddressReward(address _addr) public view returns (uint256) {
-        return stakes[_addr].rewardAmount;
+        return rewards[_addr];
     }
 
     function getAddressStake(address _addr) public view returns (uint256) {
@@ -109,7 +102,7 @@ contract UniStake is Ownable {
             block.timestamp > stakes[msg.sender].startTime + yieldPeriod &&
             stakes[msg.sender].rewardClaimed == false
         ) {
-            stakes[msg.sender].rewardAmount =
+            rewards[msg.sender] =
                 (stakes[msg.sender].stakedAmount * incentive) /
                 100;
         }

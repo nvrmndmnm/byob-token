@@ -17,7 +17,9 @@ module.exports = {
   networks: {
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: [process.env.WALLET_PRIVATE_KEY, process.env.WALLET2_PRIVATE_KEY]
+      accounts: [process.env.WALLET_PRIVATE_KEY, process.env.WALLET2_PRIVATE_KEY],
+      gas: 2100000,
+      gasPrice: 8000000000
     },
     localhost: {
       url: 'http://localhost:8545'
@@ -32,5 +34,8 @@ module.exports = {
     runOnCompile: true,
     strict: true,
     only: [':ERC20$'],
+  },
+  gasReporter: {
+    enabled: true
   }
 };
